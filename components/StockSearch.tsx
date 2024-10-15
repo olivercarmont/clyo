@@ -49,6 +49,21 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
     });
   }, []);
 
+  const fetchAndInitStocks = useCallback(async () => {
+    try {
+      const response = await fetch('/api/stocks');
+      const fetchedStocks = await response.json();
+      const formattedStocks = fetchedStocks.map((stock: Stock) => ({
+        symbol: stock.symbol.toUpperCase(),
+        name: stock.name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+      }));
+      localStorage.setItem('stockSymbols', JSON.stringify(formattedStocks));
+      initFuse(formattedStocks);
+    } catch (error) {
+      console.error('Failed to fetch stocks:', error);
+    }
+  }, [initFuse]);
+
   useEffect(() => {
     setMounted(true);
     const cachedStocks = localStorage.getItem('stockSymbols');
@@ -56,18 +71,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
       const parsedStocks = JSON.parse(cachedStocks);
       initFuse(parsedStocks);
     } else {
-      // If no cached stocks, fetch from API (this should happen rarely)
-      fetch('/api/stocks')
-        .then(response => response.json())
-        .then(fetchedStocks => {
-          const formattedStocks = fetchedStocks.map((stock: Stock) => ({
-            symbol: stock.symbol.toUpperCase(),
-            name: stock.name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
-          }));
-          localStorage.setItem('stockSymbols', JSON.stringify(formattedStocks));
-          initFuse(formattedStocks);
-        })
-        .catch(error => console.error('Failed to fetch stocks:', error));
+      fetchAndInitStocks();
     }
 
     const handleClickOutside = (event: MouseEvent) => {
@@ -80,7 +84,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [initFuse]);
+  }, [initFuse, fetchAndInitStocks]);
 
   const handleSearch = (text: string) => {
     setSearch(text);
