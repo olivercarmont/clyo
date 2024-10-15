@@ -1,4 +1,4 @@
-# Option Contract API UI
+# Clyo.lat: An Option Contracts UI
 
 Check it out at **[clyo.lat](https://clyo.lat)**
 
