@@ -11,7 +11,7 @@ export default function Home() {
       </nav>
 
       <main className="flex-1 flex items-start sm:items-center justify-center px-4 pt-11 sm:pt-8">
-        <div className="w-full max-w-3xl">
+        <div className="w-full max-w-6xl">
           <ErrorBoundary
             fallback={
               <span className='text-sm text-red-600'>

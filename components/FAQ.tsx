@@ -37,7 +37,7 @@ const FAQCard: React.FC = () => {
   };
 
   return (
-    <Card className='w-full max-w-[400px] mt-8'>
+    <Card className='w-full max-w-[400px] bg-gray-900 border-gray-800'>
       <CardHeader>
         <CardTitle className="text-2xl font-sans">FAQ</CardTitle>
       </CardHeader>

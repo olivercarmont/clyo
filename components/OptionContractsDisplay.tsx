@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import StockSearch from "@/components/StockSearch";
+import FAQCard from "@/components/FAQ";
 
 interface OptionContract {
   contract_type: string;
@@ -44,42 +45,6 @@ interface StockPriceData {
   c: number;
 }
 
-interface FAQItem {
-  question: string;
-  answer: string;
-}
-
-const faqItems: FAQItem[] = [
-  {
-    question: "What is Implied Volatility?",
-    answer: "Implied volatility is a metric that captures the market's view of the likelihood of changes in a given security's price. Higher implied volatility indicates that the market is expecting larger price swings, while lower implied volatility suggests smaller price movements are anticipated."
-  },
-  {
-    question: "What is Delta?",
-    answer: "Delta measures the rate of change in the price of an option with respect to the change in the underlying asset's price. A delta of 0.5 means that for every $1 the underlying stock moves, the option price is expected to change by $0.50."
-  },
-  {
-    question: "What is Gamma?",
-    answer: "Gamma measures the rate of change in an option's delta per 1-point move in the underlying asset's price. It provides information about how stable an option's delta is: higher gamma values mean that delta could change more quickly with changes in the underlying price."
-  },
-  {
-    question: "What is Theta?",
-    answer: "Theta represents the rate of change in the price of an option with respect to the passage of time, also known as time decay. It is typically a negative value for bought options, indicating that the option loses value as time passes."
-  },
-  {
-    question: "What is Vega?",
-    answer: "Vega measures the rate of change in an option's price with respect to the change in the underlying asset's implied volatility. A higher vega indicates the option's value is more sensitive to changes in volatility."
-  },
-  {
-    question: "What is Open Interest?",
-    answer: "Open interest represents the total number of outstanding options contracts that have not been settled for a particular strike price and expiration date. It indicates the liquidity of an option and the level of activity for that specific contract."
-  },
-  {
-    question: "What is Day Volume?",
-    answer: "Day volume refers to the total number of option contracts traded during the current trading day for a specific strike price and expiration date. It provides insight into the current trading activity and liquidity of an option contract."
-  }
-];
-
 export const OptionContractsDisplay: React.FC = () => {
   const [callOptions, setCallOptions] = useState<OptionContract[]>([]);
   const [putOptions, setPutOptions] = useState<OptionContract[]>([]);
@@ -110,7 +75,6 @@ export const OptionContractsDisplay: React.FC = () => {
   };
 
   const fetchOptionContracts = async (ticker: string, contractType: 'call' | 'put') => {
-    console.log(ticker);
     const params = new URLSearchParams({
       ticker_symbol: ticker,
       limit: "20",
@@ -139,40 +103,6 @@ export const OptionContractsDisplay: React.FC = () => {
       <div className="animate-spin rounded-full h-32 w-32 border-t-2 border-b-2 border-gray-900"></div>
     </div>
   );
-
-  const FAQCard: React.FC = () => {
-    const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-    const toggleQuestion = (index: number) => {
-      setOpenIndex(openIndex === index ? null : index);
-    };
-
-    return (
-      <Card className='w-full mt-8'>
-        <CardHeader>
-          <CardTitle className="text-2xl font-sans">FAQ</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {faqItems.map((item, index) => (
-            <div key={index} className="mb-4">
-              <button
-                className="flex justify-between items-center w-full text-left font-semibold text-lg py-2 px-4 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors duration-200"
-                onClick={() => toggleQuestion(index)}
-              >
-                {item.question}
-                <span>{openIndex === index ? '▲' : '▼'}</span>
-              </button>
-              {openIndex === index && (
-                <div className="mt-2 p-4 bg-white dark:bg-gray-800 rounded-md">
-                  {item.answer}
-                </div>
-              )}
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-    );
-  };
 
   const OptionCard = ({ contract, isCall }: { contract: OptionContract, isCall: boolean }) => {
     const strikePrice = parseFloat(contract.strike_price);
@@ -244,62 +174,68 @@ export const OptionContractsDisplay: React.FC = () => {
       </Card>
     );
   };
-
+  
   return (
-    <div className="flex flex-col gap-8 px-4 max-w-[2000px] mx-auto w-full">
-      <Card className='w-full mt-8'>
-        <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-6'>
-          <CardTitle className="text-3xl mb-4 font-sans">Option Contract API - UI</CardTitle>
-          <CardDescription className="font-sans">
-            UI for the rust api for fetching stock option data:
-          </CardDescription>
-          <CardDescription className="mt-2 font-sans">
-            GitHub Repository: <a href="https://github.com/olivercarmont/option-contracts-api" className="text-blue-600 hover:underline" target="_blank" rel="noopener noreferrer">https://github.com/olivercarmont/option-contracts-api</a>
-          </CardDescription>
-        </CardHeader>
-        <CardContent className='p-8'>
-          <CardDescription className="mb-4 text-sm font-sans">Select a stock</CardDescription>
-          <div className="flex items-center space-x-2 mb-8 w-full max-w-2xl">
-            <StockSearch 
-              onSelectStock={handleStockSelect}
-              inputClassName="h-12 text-base tracking-tight transition-all duration-100 ease-in-out focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:ring-offset-0 focus-visible:outline-none font-sans"
-              initialValue={`${currentStock.name} (${currentStock.symbol})`}
-            />
-          </div>
-          {error && <div className="text-red-500 mb-6 font-sans">{error}</div>}
-          {loading ? (
-            <LoadingScreen />
-          ) : (
-            <div className="flex flex-col lg:flex-row gap-12">
-              <div className="flex-1">
-                <h3 className="text-2xl font-semibold mb-6 font-sans">Call Options for {currentStock.symbol}</h3>
-                <div className="grid grid-cols-1 gap-6">
-                  {callOptions.length > 0 ? (
-                    callOptions.map((contract, index) => (
-                      <OptionCard key={`call-${index}`} contract={contract} isCall={true} />
-                    ))
-                  ) : (
-                    <div className="text-center text-gray-500 col-span-full font-sans">No call options available for this stock.</div>
-                  )}
-                </div>
-              </div>
-              <div className="flex-1">
-                <h3 className="text-2xl font-semibold mb-6 font-sans">Put Options for {currentStock.symbol}</h3>
-                <div className="grid grid-cols-1 gap-6">
-                  {putOptions.length > 0 ? (
-                    putOptions.map((contract, index) => (
-                      <OptionCard key={`put-${index}`} contract={contract} isCall={false} />
-                    ))
-                  ) : (
-                    <div className="text-center text-gray-500 col-span-full font-sans">No put options available for this stock.</div>
-                  )}
-                </div>
-              </div>
+    <div className="flex gap-8 px-4 max-w-[2000px] mx-auto w-full">
+      <div className="flex-grow">
+        <Card className='w-full border-[1px] pr-4'>
+          <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-6'>
+            <CardTitle className="text-3xl mb-4 font-sans text-white">Option Contracts API UI</CardTitle>
+            <CardDescription className="mt-2 font-sans text-gray-400">
+              API URL: <a href="https://wg2rfvqgbqsxc6ucdfnqldlzoa0buncf.lambda-url.us-east-1.on.aws/" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">https://wg2rfvqgbqsxc6ucdfnqldlzoa0buncf.lambda-url.us-east-1.on.aws/</a>
+            </CardDescription>
+            <CardDescription className="mt-2 font-sans text-gray-400">
+              GitHub Repository: <a href="https://github.com/olivercarmont/option-contracts-api" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">https://github.com/olivercarmont/option-contracts-api</a>
+            </CardDescription>
+          </CardHeader>
+          <CardContent className='pt-7 pl-4'>
+            <CardDescription className="mb-2 ml-2 text-lg font-sans text-white font-bold">Select a stock:</CardDescription>
+            <div className="flex items-center space-x-2 mb-4 w-full max-w-2xl">
+              <StockSearch 
+                onSelectStock={handleStockSelect}
+                inputClassName="h-12 mb-2 text-base tracking-tight transition-all duration-100 ease-in-out focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:ring-offset-0 focus-visible:outline-none font-sans"
+                initialValue=""
+              />
             </div>
-          )}
-        </CardContent>
-      </Card>
-      <FAQCard />
+            {error && <div className="text-red-500 mb-6 font-sans">{error}</div>}
+            <div className='pl-4'>
+              {loading ? (
+                <LoadingScreen />
+              ) : (
+                <div className="flex flex-col lg:flex-row gap-12">
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-semibold mb-6 font-sans text-white">Call Options for {currentStock.symbol}</h3>
+                    <div className="grid grid-cols-1 gap-6">
+                      {callOptions.length > 0 ? (
+                        callOptions.map((contract, index) => (
+                          <OptionCard key={`call-${index}`} contract={contract} isCall={true} />
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-500 col-span-full font-sans">No call options available for this stock.</div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-2xl font-semibold mb-6 font-sans text-white">Put Options for {currentStock.symbol}</h3>
+                    <div className="grid grid-cols-1 gap-6">
+                      {putOptions.length > 0 ? (
+                        putOptions.map((contract, index) => (
+                          <OptionCard key={`put-${index}`} contract={contract} isCall={false} />
+                        ))
+                      ) : (
+                        <div className="text-center text-gray-500 col-span-full font-sans">No put options available for this stock.</div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+      <div className="w-3/8">
+        <FAQCard />
+      </div>
     </div>
   );
 };

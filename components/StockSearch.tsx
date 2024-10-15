@@ -31,7 +31,7 @@ interface StockSearchProps {
 }
 
 const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName, initialValue = '' }) => {
-  const [search, setSearch] = useState(initialValue);
+  const [search, setSearch] = useState('');
   const [results, setResults] = useState<FuseResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const { theme, systemTheme } = useTheme();
@@ -90,7 +90,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
     setSearch(text);
     if (fuse.current && text) {
       const searchResults = fuse.current.search(text);
-      setResults(searchResults.slice(0, 10) as FuseResult[]); // Type assertion here
+      setResults(searchResults.slice(0, 10) as FuseResult[]);
       setShowResults(true);
     } else {
       setResults([]);
@@ -109,7 +109,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
   };
 
   const handleSelectStock = (stock: Stock) => {
-    setSearch(`${stock.name} (${stock.symbol})`);
+    setSearch('');
     setShowResults(false);
     onSelectStock(stock);
   };
@@ -147,7 +147,7 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
     <div className="relative w-full" ref={searchRef}>
       <div className="relative">
         <Input 
-          placeholder="e.g. Apple" 
+          placeholder="Search for a stock" 
           type="text"
           value={search}
           onClick={handleInputClick}  
