@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Fuse from 'fuse.js';
 import { useTheme } from 'next-themes';
 import { Input } from "@/components/ui/input";
@@ -10,21 +10,28 @@ interface Stock {
   name: string;
 }
 
-interface FuseResult extends Fuse.FuseResult<Stock> {
-  matches?: Array<{
-    indices: Array<[number, number]>;
-    key: string;
-  }>;
+type FuseResultMatch = {
+  indices: readonly [number, number][];
+  key?: string;
+  refIndex?: number;
+  value?: string;
+}
+
+type FuseResult = {
+  item: Stock;
+  refIndex: number;
+  score?: number;
+  matches?: readonly FuseResultMatch[];
 }
 
 interface StockSearchProps {
-  onSelectStock: (stock: Stock) => void;
+  onSelectStock: (stock: { symbol: string; name: string }) => void;
   inputClassName?: string;
+  initialValue?: string;
 }
 
-const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName }) => {
-  const [search, setSearch] = useState('');
-  const [stocks, setStocks] = useState<Stock[]>([]);
+const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName, initialValue = '' }) => {
+  const [search, setSearch] = useState(initialValue);
   const [results, setResults] = useState<FuseResult[]>([]);
   const [showResults, setShowResults] = useState(false);
   const { theme, systemTheme } = useTheme();
@@ -32,9 +39,36 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
   const searchRef = useRef<HTMLDivElement>(null);
   const fuse = useRef<Fuse<Stock> | null>(null);
 
+  const initFuse = useCallback((stocksData: Stock[]) => {
+    fuse.current = new Fuse(stocksData, {
+      keys: ['symbol', 'name'],
+      threshold: 0.3,
+      ignoreLocation: true,
+      includeMatches: true,
+      shouldSort: true,
+    });
+  }, []);
+
   useEffect(() => {
     setMounted(true);
-    loadStocks();
+    const cachedStocks = localStorage.getItem('stockSymbols');
+    if (cachedStocks) {
+      const parsedStocks = JSON.parse(cachedStocks);
+      initFuse(parsedStocks);
+    } else {
+      // If no cached stocks, fetch from API (this should happen rarely)
+      fetch('/api/stocks')
+        .then(response => response.json())
+        .then(fetchedStocks => {
+          const formattedStocks = fetchedStocks.map((stock: Stock) => ({
+            symbol: stock.symbol.toUpperCase(),
+            name: stock.name.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ')
+          }));
+          localStorage.setItem('stockSymbols', JSON.stringify(formattedStocks));
+          initFuse(formattedStocks);
+        })
+        .catch(error => console.error('Failed to fetch stocks:', error));
+    }
 
     const handleClickOutside = (event: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
@@ -46,50 +80,13 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, []);
-
-  const loadStocks = async () => {
-    const cachedStocks = localStorage.getItem('stockSymbols');
-    if (cachedStocks) {
-      const parsedStocks = JSON.parse(cachedStocks);
-      setStocks(parsedStocks);
-      initFuse(parsedStocks);
-    } else {
-      try {
-        const response = await fetch('/api/stocks');
-        const fetchedStocks = await response.json();
-        setStocks(fetchedStocks);
-        localStorage.setItem('stockSymbols', JSON.stringify(fetchedStocks));
-        initFuse(fetchedStocks);
-      } catch (error) {
-        console.error('Failed to fetch stocks:', error);
-      }
-    }
-  };
-
-  const initFuse = (stocksData: Stock[]) => {
-    fuse.current = new Fuse(stocksData, {
-      keys: ['symbol', 'name'],
-      threshold: 0.3,
-      ignoreLocation: true,
-      includeMatches: true,
-      shouldSort: true,
-      sortFn: (a, b) => {
-        const aSymbol = a.item?.symbol || '';
-        const bSymbol = b.item?.symbol || '';
-        if (a.score === b.score) {
-          return aSymbol.length - bSymbol.length;
-        }
-        return (a.score || 0) - (b.score || 0);
-      }
-    });
-  };
+  }, [initFuse]);
 
   const handleSearch = (text: string) => {
     setSearch(text);
     if (fuse.current && text) {
       const searchResults = fuse.current.search(text);
-      setResults(searchResults.slice(0, 5));
+      setResults(searchResults.slice(0, 10) as FuseResult[]); // Type assertion here
       setShowResults(true);
     } else {
       setResults([]);
@@ -104,7 +101,6 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
   };
 
   const handleInputClick = () => {
-    setSearch('');
     setShowResults(true);
   };
 
@@ -114,16 +110,21 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
     onSelectStock(stock);
   };
 
-  const highlightMatches = (text: string, matches: Array<[number, number]>) => {
+  const highlightMatches = (text: string, matches: readonly FuseResultMatch[] | undefined) => {
+    if (!matches || matches.length === 0) return text;
+    
+    const sortedMatches = [...matches].sort((a, b) => (a.indices[0][0] || 0) - (b.indices[0][0] || 0));
     let lastIndex = 0;
     const parts = [];
 
-    matches.forEach(([start, end]) => {
-      if (start > lastIndex) {
-        parts.push(text.slice(lastIndex, start));
-      }
-      parts.push(<b key={start}>{text.slice(start, end + 1)}</b>);
-      lastIndex = end + 1;
+    sortedMatches.forEach((match) => {
+      match.indices.forEach(([start, end]) => {
+        if (start > lastIndex) {
+          parts.push(text.slice(lastIndex, start));
+        }
+        parts.push(<span key={start} className="font-semibold">{text.slice(start, end + 1)}</span>);
+        lastIndex = end + 1;
+      });
     });
 
     if (lastIndex < text.length) {
@@ -140,34 +141,37 @@ const StockSearch: React.FC<StockSearchProps> = ({ onSelectStock, inputClassName
 
   return (
     <div className="relative w-full" ref={searchRef}>
-      <Input 
-        placeholder="e.g. Apple" 
-        type="text"
-        value={search}
-        onClick={handleInputClick}  
-        onChange={(e) => handleSearch(e.target.value)}
-        onFocus={handleInputFocus}
-        className="h-12 w-full text-base tracking-tight transition-all duration-100 ease-in-out focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:ring-offset-0 focus-visible:outline-none"
-      />
+      <div className="relative">
+        <Input 
+          placeholder="e.g. Apple" 
+          type="text"
+          value={search}
+          onClick={handleInputClick}  
+          onChange={(e) => handleSearch(e.target.value)}
+          onFocus={handleInputFocus}
+          className={inputClassName || "h-12 w-full text-base tracking-tight transition-all duration-100 ease-in-out focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:ring-offset-0 focus-visible:outline-none"}
+        />
+      </div>
 
       {showResults && results.length > 0 && (
-        <ul className={`absolute z-10 w-full mt-1 border rounded-xl shadow-lg ${
+        <ul className={`absolute z-10 w-full mt-1 border rounded-md shadow-lg ${
           isDarkTheme ? 'bg-gray-800 text-white' : 'bg-white text-black'
         }`}>
           {results.map((result, index) => {
-            const symbolMatches = result.matches?.find(m => m.key === 'symbol')?.indices || [];
-            const nameMatches = result.matches?.find(m => m.key === 'name')?.indices || [];
+            const symbolMatches = result.matches?.find(m => m.key === 'symbol');
+            const nameMatches = result.matches?.find(m => m.key === 'name');
             return (
               <li 
                 key={index} 
-                className={`p-2 cursor-pointer ${
+                className={`px-3 py-2 cursor-pointer text-sm ${
                   isDarkTheme 
-                    ? 'bg-black hover:bg-gray-800' 
-                    : 'bg-gray-0 hover:bg-gray-100'
+                    ? 'hover:bg-gray-700' 
+                    : 'hover:bg-gray-100'
                 }`}
                 onClick={() => handleSelectStock(result.item)}
               >
-                {highlightMatches(result.item.name, nameMatches)} ({highlightMatches(result.item.symbol, symbolMatches)})
+                <span className="font-medium">{highlightMatches(result.item.symbol, symbolMatches ? [symbolMatches] : undefined)}</span>
+                <span className="ml-2 text-gray-500">{highlightMatches(result.item.name, nameMatches ? [nameMatches] : undefined)}</span>
               </li>
             );
           })}

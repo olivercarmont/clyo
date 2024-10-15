@@ -6,7 +6,7 @@ export default function Home() {
   return (
     <div className='min-h-screen flex flex-col'>
       <nav className='w-full flex flex-row items-center justify-between px-6 py-3 border-b'>
-        <h1 className='text-xl font-bold'>Stock Options Viewer</h1>
+        <h1 className='text-xl font-bold'></h1>
         <ThemeToggle />
       </nav>
 

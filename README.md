@@ -1,5 +1,7 @@
 # Option Contract API UI
 
+![Option Contract API UI](readme-img.png)
+
 ## API
 
 This project uses a custom Rust API for fetching stock option data. The API repository can be found at:

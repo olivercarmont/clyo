@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -85,15 +85,20 @@ export const OptionContractsDisplay: React.FC = () => {
   const [putOptions, setPutOptions] = useState<OptionContract[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentStock, setCurrentStock] = useState<{ symbol: string, name: string }>({ symbol: 'AAPL', name: 'Apple Inc.' });
 
-  const handleStockSelect = async (obj: string) => {
-    let ticker = obj["symbol"];
-    let name = obj["symbol"];
+  useEffect(() => {
+    // Fetch initial options for AAPL when the component mounts
+    handleStockSelect({ symbol: 'AAPL', name: 'Apple Inc.' });
+  }, []);
+
+  const handleStockSelect = async (obj: { symbol: string, name: string }) => {
+    setCurrentStock(obj);
     setLoading(true);
     setError(null);
     try {
-      const callContracts = await fetchOptionContracts(ticker, 'call');
-      const putContracts = await fetchOptionContracts(ticker, 'put');
+      const callContracts = await fetchOptionContracts(obj.symbol, 'call');
+      const putContracts = await fetchOptionContracts(obj.symbol, 'put');
       setCallOptions(callContracts);
       setPutOptions(putContracts);
     } catch (err) {
@@ -258,6 +263,7 @@ export const OptionContractsDisplay: React.FC = () => {
             <StockSearch 
               onSelectStock={handleStockSelect}
               inputClassName="h-12 text-base tracking-tight transition-all duration-100 ease-in-out focus-visible:ring-1 focus-visible:ring-gray-400 focus-visible:ring-offset-0 focus-visible:outline-none font-sans"
+              initialValue={`${currentStock.name} (${currentStock.symbol})`}
             />
           </div>
           {error && <div className="text-red-500 mb-6 font-sans">{error}</div>}
@@ -266,7 +272,7 @@ export const OptionContractsDisplay: React.FC = () => {
           ) : (
             <div className="flex flex-col lg:flex-row gap-12">
               <div className="flex-1">
-                <h3 className="text-2xl font-semibold mb-6 font-sans">Call Options</h3>
+                <h3 className="text-2xl font-semibold mb-6 font-sans">Call Options for {currentStock.symbol}</h3>
                 <div className="grid grid-cols-1 gap-6">
                   {callOptions.length > 0 ? (
                     callOptions.map((contract, index) => (
@@ -278,7 +284,7 @@ export const OptionContractsDisplay: React.FC = () => {
                 </div>
               </div>
               <div className="flex-1">
-                <h3 className="text-2xl font-semibold mb-6 font-sans">Put Options</h3>
+                <h3 className="text-2xl font-semibold mb-6 font-sans">Put Options for {currentStock.symbol}</h3>
                 <div className="grid grid-cols-1 gap-6">
                   {putOptions.length > 0 ? (
                     putOptions.map((contract, index) => (
