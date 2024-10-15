@@ -37,4 +37,5 @@ This project uses a custom Rust API for fetching stock option data. The API repo
 5. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ## Special thanks to
-
+- [Fuse.js](https://fusejs.io/)
+- [Polygon.io](https://polygon.io/)
