@@ -249,7 +249,7 @@ export const OptionContractsDisplay: React.FC = () => {
     <div className="flex flex-col gap-8 px-4 max-w-[2000px] mx-auto w-full">
       <Card className='w-full mt-8'>
         <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-6'>
-          <CardTitle className="text-3xl mb-4 font-sans">Stock Option Contracts Viewer</CardTitle>
+          <CardTitle className="text-3xl mb-4 font-sans">Option Contract API - UI</CardTitle>
           <CardDescription className="font-sans">
             UI for the rust api for fetching stock option data:
           </CardDescription>
