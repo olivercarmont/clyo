@@ -180,7 +180,7 @@ export const OptionContractsDisplay: React.FC = () => {
       <div className="flex-grow">
         <Card className='w-full border-[1px] pr-4'>
           <CardHeader className='flex flex-col items-stretch space-y-0 border-b p-6'>
-            <CardTitle className="text-3xl mb-4 font-sans text-white">Option Contracts API UI</CardTitle>
+            <CardTitle className="text-3xl mb-4 font-sans text-white">Clyo: Option Contracts UI</CardTitle>
             <CardDescription className="mt-2 font-sans text-gray-400">
               API URL: <a href="https://wg2rfvqgbqsxc6ucdfnqldlzoa0buncf.lambda-url.us-east-1.on.aws/" className="text-blue-400 hover:underline" target="_blank" rel="noopener noreferrer">https://wg2rfvqgbqsxc6ucdfnqldlzoa0buncf.lambda-url.us-east-1.on.aws/</a>
             </CardDescription>

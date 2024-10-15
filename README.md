@@ -1,6 +1,6 @@
 # Option Contract API UI
 
-![Option Contract API UI](readme-img.png)
+![Clyo: Option Contracts UI](readme-img.png)
 
 ## API
 
